@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[function($scope,$rootScope,spUtil) {
+    /* widget controller */
+		spUtil.addInfoMessage('new widget');
+    var c = this;
+    c.updateNote = function(updateType) {
+    	c.server.get({
+      action: 'updateNote',
+      noteID: c.data.noteID,
+      noteBody: c.data.note,
+      noteTitle: c.data.title
+    }).then(function(r) {
+				c.server.get({
+					action: 'reloadNote'
+				}).then(function(rs){
+					console.log(rs);
+					$rootScope.$emit('reloadNote',rs.data);
+				});
+				
+    });
+  }
+	
+     $rootScope.$on('selectNote', function(event,data) {
+      c.server.get({
+        action: 'getNote',
+        noteID: $rootScope.noteID
+      }).then(function(r) {
+        c.data.title = r.data.note.title;
+        c.data.note = r.data.note.note;
+        c.data.noteID = r.data.note.sys_id;
+      });
+    });
+}
+]]></client_script>
+        <controller_as>c</controller_as>
+        <css/>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>false</has_preview>
+        <id>notes_body</id>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {  }]]></link>
+        <name>Notes Body</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+    /* populate the 'data' object */
+		console.log(input);
+    if (input && input.noteID) {
+      var note = new GlideRecord('x_snc_createnotes_note');
+      if (note.get(input.noteID)) {
+        if (input.action == 'getNote') {
+          data.note = {};
+          $sp.getRecordValues(data.note, note, "title, note, sys_id");
+        }
+				else if (input.action == 'updateNote') { 
+    			note.title = input.noteTitle; 
+   	 			note.note = input.noteBody; 
+    			note.update(); 
+  			}
+      }	
+    }
+		else if (input && input.action == 'reloadNote'){
+				data.notes = [];
+				var noteGR = new GlideRecord('x_snc_createnotes_note');
+				noteGR.addQuery('user', gs.getUser().getID());
+				noteGR.orderByDesc('sys_created_on');
+				noteGR.query();
+				while (noteGR.next()) {
+					var noteObj = {};
+					//use service portal helper method to get some display values
+					$sp.getRecordDisplayValues(noteObj, noteGR, 'number,title,sys_id');
+					//get the first 20 characters of the description
+					noteObj.note = noteGR.getValue('note').slice(0,20);
+					//push the populated obj into the array
+					data.notes.push(noteObj);
+      	}
+			}
+  })();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2021-12-27 10:31:24</sys_created_on>
+        <sys_id>e7842cf72f6401109cf024c62799b6c4</sys_id>
+        <sys_mod_count>35</sys_mod_count>
+        <sys_name>Notes Body</sys_name>
+        <sys_package display_value="CreateNotes" source="x_snc_createnotes">df5fd9a5090232007f44e1046c8ff69f</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="CreateNotes">df5fd9a5090232007f44e1046c8ff69f</sys_scope>
+        <sys_update_name>sp_widget_e7842cf72f6401109cf024c62799b6c4</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2021-12-28 03:42:21</sys_updated_on>
+        <template><![CDATA[<div class="panel panel-default" ng-show="c.data.noteID">
+  <div class="panel-heading clearfix">
+    <div class="row">
+      <div class="col-md-12">
+        <input class="form-control" id="note-title" ng-model="c.data.title" ng-change="c.updateNote('title')" ng-model-options="{debounce: 1000}"/>
+      </div>
+    </div>
+  </div>
+  <div class="panel-body">
+    <textarea class="form-control" id="note-body" ng-model="c.data.note" ng-change="c.updateNote('body')" ng-model-options="{debounce: 1000}" ></textarea>
+  </div>
+</div>]]></template>
+    </sp_widget>
+</record_update>
